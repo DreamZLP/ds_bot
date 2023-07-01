@@ -8,31 +8,30 @@ import datetime
 command_prefix = '!'
 bot = commands.Bot(command_prefix = '!',intents=discord.Intents.all())
 
-# ID канала, в который нужно отправлять обновленную информацию
-CHANNEL_ID = 1124804358433943603
-
+# ID канала, в который нужно отправлять обновленную информацию (для получения id необходимо включить режим разработчика в Discord)
+CHANNEL_ID = channel_id
 # Отключаем стандартную команду !help
 bot.remove_command('help')
 
 
 
-@bot.command()  #Приветствие?
+@bot.command()  #Приветствие (тест-функция)
 async def hello(ctx): 
     author = ctx.message.author 
-    await ctx.send(f'Привет, {author.mention}! Бот Kawaii!-Universe dreamzpbot приветствует вас! ❤️❤️❤️') 
+    await ctx.send(f'Привет, {author.mention}! Бот Kawaii!-Universe dreamzpbot приветствует вас! ❤️❤️❤️')  # 'Kawaii!-Universe dreamzpbot' = bot_name
 
-@bot.command()  #Рандомное число от 0 до 100
+@bot.command()  #Рандомное число от 0 до 100 (тест-функция)
 async def rand(ctx, *arg):
     await ctx.reply(random.randint(0,100))
 
-@bot.command()
+@bot.command() #Задержка относительно сервера (тест-функция)
 async def latence(ctx):
     guild = ctx.guild
     region_info = str(round(bot.latency * 1000)) + " ms"
     await ctx.send(f'Задержка сервера относительно региона: {region_info}')
 
 
-@bot.command()
+@bot.command() #Вызов справки по командам
 async def help(ctx):
     emb1 = discord.Embed(title="Информация о командах", color=random.randint(1, 16777216))
     emb1.add_field(name = f"`{command_prefix}help` : ", value="Вызовет это меню", inline=False)
@@ -42,7 +41,7 @@ async def help(ctx):
     emb1.add_field(name = f"`{command_prefix}null` : ", value="?", inline=False)
     message = await ctx.send(embed = emb1)
 
-@bot.event   #Сообщения пользователю в лс и на сервере
+@bot.event   #Сообщения пользователю в лс и на сервере при вступлении в сервер 
 async def on_member_join(member):
     title = f'Добро пожаловать на {member.guild.name}'
     emb1 = discord.Embed(title = title, color=random.randint(1, 16777216))
@@ -59,7 +58,7 @@ async def on_member_join(member):
     embed = discord.Embed(title="Роль присвоена", description=f"Пользователю {member.mention} присвоена роль {role.mention}", color=role_color)
     await channel.send(embed=embed)
 
-@bot.command()
+@bot.command() #Команда, которая будет удалена
 async def serverinfo(ctx):
     # guild = ctx.guild
     # total_members = len(guild.members)
@@ -82,15 +81,15 @@ async def serverinfo(ctx):
     message = await ctx.send(embed = emb1)
 
 
-@bot.command()
+@bot.command() #Пустая команда
 async def null(ctx):
     emb1 = discord.Embed(title="Информационное сообщение!", color=random.randint(1, 16777216))
     emb1.add_field(name = "Ошибка команды!", value=f"Команда `{command_prefix}null` пуста или же ещё не существует!", inline=False)
     message = await ctx.send(embed = emb1)
 
 
-@bot.event
-async def on_ready():
+@bot.event  #Персональный статус бота
+async def on_ready(): 
     print(f'Bot connected as {bot.user.name}')
     # # Setting `Watching ` status
     # await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="Kawaii!-Universe"))
@@ -98,9 +97,9 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(name="Kawaii!-Universe"))
     update_server_info.start()
 
-@tasks.loop(minutes=1)
+@tasks.loop(minutes=1)  #Обновление статуса сервера в отдельном канале
 async def update_server_info():
-    guild_id = 1044992717136072754  # Замените GUILD_ID на ID вашего сервера
+    guild_id = GUILD_ID  # Замените GUILD_ID на ID вашего сервера
     channel = bot.get_channel(CHANNEL_ID)
     if channel:
         guild = bot.get_guild(guild_id)
@@ -140,4 +139,4 @@ async def update_server_info():
             else:  # Если нет предыдущего сообщения, отправляем новое
                 await channel.send(embed=embed)
 
-bot.run('MTA0NDk5MTg2MzU2MTY2MjQ2NA.G8A3VY.c2odemz7LfxgMytVawFd4DPIbK527W2wijYiyI')
+bot.run('discord_bot_token')
