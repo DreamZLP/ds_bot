@@ -1,14 +1,11 @@
 import random
 import discord
 import datetime
+import disnake
+from disnake.ext import commands
 from pytube import extract
 from discord.ext import commands, tasks
-
-# import config
-# from config import settings
-
-# import disnake
-# from disnake.ext import commands
+from discord import ActivityType
 
 intents = discord.Intents.all()
 
@@ -16,6 +13,7 @@ last_post_id = None
 
 command_prefix = '!'
 bot = commands.Bot(command_prefix='!', intents=intents)
+
 
 # Создание экземпляра клиента Discord
 client = discord.Client(intents=intents)
@@ -28,6 +26,11 @@ CHANNEL_ID_FOR_MESSAGE = ###
 
 # Отключаем стандартную команду !help
 bot.remove_command('help')
+
+
+@bot.command()
+async def test(interaction: disnake.AppCmdInter):
+    await interaction.send("тест")
 
 
 @bot.command()  # Приветствие?
@@ -70,6 +73,8 @@ async def help(ctx):
                    value="Просмотра информации о задержке сервера", inline=False)
     emb1.add_field(name=f"`{command_prefix}createchannel` : ",
                    value="Создание нового текстового канала", inline=False)
+    emb1.add_field(name=f"`{command_prefix}activity` : ",
+                   value="Активность пользователя относительно API Discord", inline=False)
     emb1.add_field(name=f"`{command_prefix}null` : ", value="?", inline=False)
     message = await ctx.send(embed=emb1)
     print(f"Пользователь '{author.mention}' вызвал команду '!help'")
@@ -130,21 +135,6 @@ async def createchannel(ctx):
 
 @bot.command()
 async def serverinfo(ctx):
-    # guild = ctx.guild
-    # total_members = len(guild.members)
-    # online_members = sum(member.status != discord.Status.offline for member in guild.members)
-    # text_channels = len(guild.text_channels)
-    # voice_channels = len(guild.voice_channels)
-    # region_info = str(round(bot.latency * 1000)) + " ms"
-    # guild_icon_url = str(guild.icon.url)
-
-    # embed = discord.Embed(title="Информация о сервере", description=guild.name, color=discord.Color.blurple())
-    # embed.add_field(name="Участники", value=f"Общее количество: {total_members}\nОнлайн: {online_members}", inline=False)
-    # embed.add_field(name="Каналы", value=f"Текстовые: {text_channels}\nГолосовые: {voice_channels}", inline=False)
-    # embed.add_field(name="Задержка", value=region_info, inline=False)
-    # embed.set_thumbnail(url=guild_icon_url)
-
-    # await ctx.send(embed=embed)
     author = ctx.message.author
     emb1 = discord.Embed(title="Информационное сообщение!",
                          color=random.randint(1, 16777216))
@@ -165,6 +155,26 @@ async def null(ctx):
     print(f"Пользователь '{author.mention}' вызвал команду '!null'")
 
 
+@bot.command()
+async def activity(ctx):
+    author = ctx.message.author
+    activity = author.activity
+    if activity:
+        emb1 = discord.Embed(title=f"Статус пользователя `{author}`",
+                             color=random.randint(1, 16777216))
+        emb1.add_field(name="",
+                       value=f"Текущая активность Discord = `{activity.type}`, уточнение: `{activity.name}`", inline=False)
+        message = await ctx.send(embed=emb1)
+    else:
+        emb1 = discord.Embed(title="Информационное сообщение!",
+                             color=random.randint(1, 16777216))
+        emb1.add_field(name="Ошибка команды!",
+                       value=f"Значение пустое или тип активности не определён!", inline=False)
+        message = await ctx.send(embed=emb1)
+    print(
+        f"Пользователь '{author.mention}' вызвал команду '!activity'")
+
+
 @bot.event
 async def on_ready():
     print(f'Bot connected as {bot.user.name}')
@@ -175,10 +185,10 @@ async def on_ready():
     update_server_info.start()
 
 
-@bot.event  # Сообщения в текстовом канале о начале голосового чата
-async def on_voice_state_update(member, before, after):
-    if after.self_video != before.self_video:
-        if after.self_video:  # Проверяем, изменилась ли передача видео
+@bot.event  # Сообщения в текстовом канале о демонстрации экрана
+async def on_member_update(member, before, after):
+    if before.activity != after.activity:
+        if isinstance(after.activity, discord.Streaming):
             channel = bot.get_channel(CHANNEL_ID_FOR_MESSAGE)
             await channel.send(f'{member.name} начал демонстрировать экран!')
             print(f"{member.activity.name} начал стрим в голосовом канале! Бот отправил сообщение об этом на канал '{channel}'")
@@ -190,24 +200,24 @@ async def on_message(message):
     if last_post_id is None or message.id != last_post_id:
         last_post_id = message.id
     if message.channel.id == last_post_id:
-        channel = discord.utils.get(message.guild.text_channels, name='общее')
+        guild = discord.utils.get(message.guild.text_channels, name='общее')
         content = message.content
         author = message.author.global_name
         post_url = message.jump_url
-        forum_name = bot.get_channel(1128043675751026820)
+        channel = message.channel.id
+        forum_name = bot.get_channel(channel)
         url = content
         id = extract.video_id(url)
         imgUrl = f"https://img.youtube.com/vi/{id}/maxresdefault.jpg"
-        # Отправляем сообщение в указанный канал
 
         emb1 = discord.Embed(title=f"Новая публикация от `{author}`:",
                              color=random.randint(1, 16777216))
         emb1.add_field(name="",
                        value=f'\n\u2022 Ссылка: `{content}` \
-                                 \n\u2022 Форум: `{forum_name}` \
+                                 \n\u2022 Публикация: `{forum_name}` \
                                  \n\u2022 Перессылка на пост: {post_url}', inline=False)
         emb1.set_image(url=imgUrl)
-        message = await channel.send(embed=emb1)
+        message = await guild.send(embed=emb1)
         # await channel.send(f'{content}:')
         print(
             f'Отправлен уведомление о новой публикации №{last_post_id} в текстовый канал "общее"')
@@ -216,7 +226,7 @@ async def on_message(message):
 
 @tasks.loop(minutes=1)
 async def update_server_info():
-    guild_id = GUILD_ID  # Замените GUILD_ID на ID вашего сервера
+    guild_id = 1044992717136072754
     channel = bot.get_channel(CHANNEL_ID_FOR_SERVER_INFO)
     if channel:
         guild = bot.get_guild(guild_id)
@@ -273,4 +283,4 @@ async def update_server_info():
             else:  # Если нет предыдущего сообщения, отправляем новое
                 await channel.send(embed=embed)
 
-bot.run('discord_bot_token')
+bot.run('###')
